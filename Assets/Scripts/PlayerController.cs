@@ -16,6 +16,7 @@ public class PlayerController : MonoBehaviour
     private Animator anim;
     private bool isGrounded = false;
     private bool isFacingRight = true;
+    private bool isLevelEnd = false;
 
     // Start is called before the first frame update
     void Start()
@@ -27,35 +28,45 @@ public class PlayerController : MonoBehaviour
     // Physics
     private void FixedUpdate()
     {
-        float horiz = Input.GetAxis("Horizontal");
-        isGrounded = GroundCheck();
-
-        // Jump code goes here!
-        if(isGrounded && Input.GetAxis("Jump") > 0)
+        if (!isLevelEnd)
         {
-            rBody.AddForce(new Vector2(0.0f, jumpForce));
-            isGrounded = false;
-            // GetComponent<AudioSource>().Play();
+            float horiz = Input.GetAxis("Horizontal");
+            isGrounded = GroundCheck();
+
+            // Jump code goes here!
+            if (isGrounded && Input.GetAxis("Jump") > 0)
+            {
+                rBody.AddForce(new Vector2(0.0f, jumpForce));
+                isGrounded = false;
+                // GetComponent<AudioSource>().Play();
+            }
+
+            rBody.velocity = new Vector2(horiz * speed, rBody.velocity.y);
+
+            // Check if the sprite needs to be flipped
+            if ((isFacingRight && rBody.velocity.x < 0) || (!isFacingRight && rBody.velocity.x > 0))
+            {
+                Flip();
+            }
+            /*
+            else if(!isFacingRight && rBody.velocity.x > 0)
+            {
+                Flip();
+            }
+            */
+
+            // Communicate with the animator
+            anim.SetFloat("xVelocity", Mathf.Abs(rBody.velocity.x));
+            anim.SetFloat("yVelocity", rBody.velocity.y);
+            anim.SetBool("isGrounded", isGrounded);
         }
-
-        rBody.velocity = new Vector2(horiz * speed, rBody.velocity.y);
-
-        // Check if the sprite needs to be flipped
-        if((isFacingRight && rBody.velocity.x < 0) || (!isFacingRight && rBody.velocity.x > 0))
+        else
         {
-            Flip();
+            // Communicate with the animator
+            anim.SetFloat("xVelocity", 0.0f);
+            anim.SetFloat("yVelocity", 0.0f);
+            anim.SetBool("isGrounded", isGrounded);
         }
-        /*
-        else if(!isFacingRight && rBody.velocity.x > 0)
-        {
-            Flip();
-        }
-        */
-
-        // Communicate with the animator
-        anim.SetFloat("xVelocity", Mathf.Abs(rBody.velocity.x));
-        anim.SetFloat("yVelocity", rBody.velocity.y);
-        anim.SetBool("isGrounded", isGrounded);
     }
 
     private bool GroundCheck()
@@ -70,5 +81,26 @@ public class PlayerController : MonoBehaviour
         transform.localScale = temp;
 
         isFacingRight = !isFacingRight;
+    }
+
+    public void LevelEndTrigger()
+    {
+        isLevelEnd = true;
+    }
+
+    public void OnTriggerStay2D(Collider2D other)
+    {
+        if(other.CompareTag("Platform"))
+        {
+            transform.parent = other.transform;
+        }
+    }
+
+    public void OnTriggerExit2D(Collider2D other)
+    {
+        if(other.CompareTag("Platform"))
+        {
+            transform.parent = null;
+        }
     }
 }
